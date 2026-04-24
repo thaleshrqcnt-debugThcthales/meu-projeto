@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}Auditoria — {{ project.internal_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Auditoria de Coerência</h1>
+    <p class="page-subtitle">{{ project.public_title or project.internal_name }}</p>
+  </div>
+  <a href="/projeto/{{ project.id }}/banca" class="btn btn-primary">Próximo: Banca →</a>
+</div>
+
+<div class="audit-actions">
+  <button class="btn btn-secondary" id="btnAuditDet" onclick="runAudit('consistency')">
+    🔍 Auditoria Determinística (rápida)
+  </button>
+  <button class="btn btn-primary" id="btnAuditAI" onclick="runAudit('ai-consistency')" {% if not api_configured %}disabled{% endif %}>
+    🤖 Auditoria com IA (completa)
+  </button>
+  <button class="btn btn-outline" id="btnRisks" onclick="runAudit('risks')">
+    ⚠ Riscos Formais
+  </button>
+  <button class="btn btn-outline" id="btnAccess" onclick="runAudit('accessibility')">
+    ♿ Acessibilidade
+  </button>
+  <button class="btn btn-outline" id="btnChecklist" onclick="runAudit('checklist')" {% if not api_configured %}disabled{% endif %}>
+    📋 Checklist Documental
+  </button>
+</div>
+
+<div id="auditStatus" class="audit-status" style="display:none"></div>
+
+<div id="auditResult" style="display:none">
+  <div class="audit-summary-bar">
+    <div class="audit-score-display">
+      <span id="auditScoreNum" class="score-num">—</span>
+      <span class="score-label">/ 100</span>
+    </div>
+    <div class="audit-status-badge" id="auditStatusBadge">—</div>
+    <div class="audit-summary-text" id="auditSummaryText"></div>
+  </div>
+
+  <div class="findings-container">
+    <div class="findings-section" id="findings-critico">
+      <h3 class="findings-title critical">🚨 Erros Críticos</h3>
+      <div class="findings-list" id="list-critico"></div>
+    </div>
+    <div class="findings-section" id="findings-medio">
+      <h3 class="findings-title medium">⚠ Inconsistências Médias</h3>
+      <div class="findings-list" id="list-medio"></div>
+    </div>
+    <div class="findings-section" id="findings-leve">
+      <h3 class="findings-title light">💡 Melhorias Leves</h3>
+      <div class="findings-list" id="list-leve"></div>
+    </div>
+    <div class="findings-section" id="findings-sugestao">
+      <h3 class="findings-title suggestion">✦ Sugestões</h3>
+      <div class="findings-list" id="list-sugestao"></div>
+    </div>
+  </div>
+</div>
+
+<div id="checklistResult" style="display:none">
+  <h3>Checklist Documental</h3>
+  <div class="table-wrapper">
+    <table class="data-table" id="checklistTable">
+      <thead>
+        <tr>
+          <th>Status</th><th>Documento</th><th>Tipo</th>
+          <th>Formato</th><th>Prazo</th><th>Risco se faltar</th>
+        </tr>
+      </thead>
+      <tbody id="checklistBody"></tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const PROJECT_ID = {{ project.id }};
+
+async function runAudit(type) {
+  const status = document.getElementById('auditStatus');
+  status.style.display = 'block';
+  status.className = 'audit-status generating';
+
+  const labels = {
+    consistency: 'Rodando auditoria determinística...',
+    'ai-consistency': 'Auditoria com IA (30-60 segundos)...',
+    risks: 'Verificando riscos formais...',
+    accessibility: 'Verificando acessibilidade...',
+    checklist: 'Gerando checklist (30-60 segundos)...',
+  };
+  status.innerHTML = `⏳ ${labels[type] || 'Processando...'}`;
+
+  try {
+    const res = await fetch(`/api/audit/${PROJECT_ID}/${type}`, { method: 'POST' });
+    const data = await res.json();
+
+    if (res.ok) {
+      status.className = 'audit-status success';
+      status.innerHTML = '✓ Concluído';
+
+      if (type === 'checklist') {
+        renderChecklist(data);
+      } else if (type === 'risks') {
+        renderRisks(data);
+      } else if (type === 'accessibility') {
+        renderAccessibility(data);
+      } else {
+        renderFindings(data);
+      }
+    } else {
+      status.className = 'audit-status error';
+      status.innerHTML = `✗ Erro: ${data.detail || JSON.stringify(data)}`;
+    }
+  } catch (err) {
+    status.className = 'audit-status error';
+    status.innerHTML = `✗ ${err.message}`;
+  }
+}
+
+function renderFindings(data) {
+  const result = document.getElementById('auditResult');
+  result.style.display = 'block';
+
+  document.getElementById('auditScoreNum').textContent = Math.round(data.score || 0);
+  const badge = document.getElementById('auditStatusBadge');
+  badge.textContent = data.status || '—';
+  badge.className = 'audit-status-badge ' + (
+    data.status?.includes('ALTO RISCO') ? 'badge-critical' :
+    data.status?.includes('REVISAR') ? 'badge-medium' :
+    data.status?.includes('RESSALVAS') ? 'badge-warn' : 'badge-ok'
+  );
+  document.getElementById('auditSummaryText').textContent = data.summary || '';
+
+  const findings = data.findings || [];
+  ['critico', 'medio', 'leve', 'sugestao'].forEach(level => {
+    const items = findings.filter(f => f.level === level);
+    const list = document.getElementById(`list-${level}`);
+    const section = document.getElementById(`findings-${level}`);
+
+    if (items.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+    section.style.display = 'block';
+    list.innerHTML = items.map(f => `
+      <div class="finding-card finding-${f.level}">
+        <div class="finding-header">
+          <span class="finding-cat">${f.category}</span>
+          <span class="finding-location">${f.location}</span>
+        </div>
+        <p class="finding-problem">${f.problem}</p>
+        <p class="finding-impact"><em>Impacto: ${f.impact}</em></p>
+        <p class="finding-suggestion"><strong>Sugestão:</strong> ${f.suggestion}</p>
+      </div>
+    `).join('');
+  });
+}
+
+function renderRisks(data) {
+  const result = document.getElementById('auditResult');
+  result.style.display = 'block';
+  document.getElementById('auditScoreNum').textContent = data.status;
+  document.getElementById('auditStatusBadge').textContent = `${data.total_criticos} críticos, ${data.total_medios} médios`;
+
+  const fakeFindings = (data.riscos || []).map(r => ({
+    level: r.nivel,
+    category: r.tipo,
+    location: 'Risco Formal',
+    problem: r.descricao,
+    impact: r.consequencia,
+    suggestion: r.acao,
+  }));
+  renderFindings({ score: data.total_criticos === 0 ? 80 : 30, status: data.status, findings: fakeFindings, summary: '' });
+}
+
+function renderAccessibility(data) {
+  const cl = data.checklist || {};
+  const items = Object.entries(cl).map(([k, v]) => ({
+    level: v ? 'sugestao' : 'medio',
+    category: 'acessibilidade',
+    location: k,
+    problem: v ? '✓ Contemplado' : '✗ Não identificado',
+    impact: v ? '' : 'Pode fragilizar o plano de acessibilidade',
+    suggestion: v ? '' : 'Inclua no Plano de Acessibilidade e no orçamento',
+  }));
+  renderFindings({
+    score: data.score_acessibilidade || 0,
+    status: data.score_acessibilidade >= 70 ? 'APTO COM RESSALVAS' : 'REVISAR ANTES DE ENVIAR',
+    findings: items,
+    summary: `Score de acessibilidade: ${data.score_acessibilidade || 0}/100`,
+  });
+}
+
+function renderChecklist(data) {
+  document.getElementById('checklistResult').style.display = 'block';
+  const body = document.getElementById('checklistBody');
+  const items = data.checklist || [];
+  body.innerHTML = items.map(item => `
+    <tr>
+      <td>
+        <select class="table-input" onchange="this.closest('tr').className = this.value">
+          ${['nao_iniciado','pendente','enviado','precisa_revisar','nao_se_aplica'].map(s =>
+            `<option value="${s}" ${item.status===s?'selected':''}>${s.replace(/_/g,' ')}</option>`
+          ).join('')}
+        </select>
+      </td>
+      <td>${item.documento}</td>
+      <td><span class="badge ${item.tipo === 'obrigatorio' ? 'badge-critical' : 'badge-warn'}">${item.tipo}</span></td>
+      <td>${item.formato || '—'}</td>
+      <td>${item.prazo || '—'}</td>
+      <td><span class="badge ${item.risco_se_faltar === 'desclassificacao' ? 'badge-critical' : 'badge-medium'}">${item.risco_se_faltar || '—'}</span></td>
+    </tr>
+  `).join('');
+}
+</script>
+{% endblock %}

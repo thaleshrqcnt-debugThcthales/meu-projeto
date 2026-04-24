@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Briefing — {{ project.internal_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Briefing do Projeto</h1>
+    <p class="page-subtitle">{{ project.public_title or project.internal_name }}</p>
+  </div>
+  <a href="/projeto/{{ project.id }}/gerar" class="btn btn-primary">Próximo: Gerar →</a>
+</div>
+
+<div class="alert alert-info">
+  <strong>Escreva livremente.</strong> O briefing pode ser desorganizado — o sistema vai estruturar as informações.
+  Quanto mais detalhes concretos você fornecer, mais preciso será o projeto gerado.
+</div>
+
+<form id="briefingForm" class="form-card">
+  <div class="form-section">
+    <h3 class="form-section-title">Ideia do Projeto</h3>
+    <div class="form-group full-width">
+      <label>Descreva sua ideia livremente *</label>
+      <textarea name="free_text" id="freeText" rows="10"
+        placeholder="Ex: Quero fazer um festival de música no bairro X durante 3 dias, com shows de artistas locais, uma feira de artesanato e oficinas para jovens. A ideia surgiu da falta de espaços culturais no bairro. Já tenho parceria com a associação de moradores..."></textarea>
+      <small>Escreva como pensar. O sistema vai organizar. Não tente ser formal aqui.</small>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3 class="form-section-title">Território e Público</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Território</label>
+        <textarea name="territory" rows="3" placeholder="Bairro, região, município. Descreva características culturais e sociais relevantes."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Público-alvo</label>
+        <textarea name="target_audience" rows="3" placeholder="Quem você quer atingir? Faixa etária, perfil, quantidade estimada."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3 class="form-section-title">Equipe e Ações</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Artistas e equipe</label>
+        <textarea name="team_artists" rows="4" placeholder="Liste nomes e funções. Quem está confirmado? Quem você ainda quer convidar?"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Ações previstas</label>
+        <textarea name="planned_actions" rows="4" placeholder="Quais ações o projeto terá? Shows, oficinas, exposições, rodas de conversa, etc."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3 class="form-section-title">Espaços e Referências</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Espaços desejados</label>
+        <textarea name="desired_spaces" rows="3" placeholder="Onde você quer realizar? Praça, centro cultural, escola, galpão... Estão confirmados?"></textarea>
+        <small class="text-warn">⚠ Espaços desejados ≠ espaços confirmados. O sistema vai tratar como 'em negociação'.</small>
+      </div>
+      <div class="form-group">
+        <label>Referências culturais</label>
+        <textarea name="cultural_references" rows="3" placeholder="Quais referências artísticas, culturais ou conceituais inspiram o projeto?"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3 class="form-section-title">Parcerias</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Parceiros confirmados</label>
+        <textarea name="confirmed_partners" rows="3" placeholder="Instituições, coletivos, empresas que JÁ confirmaram participação."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Parceiros desejados</label>
+        <textarea name="desired_partners" rows="3" placeholder="Quem você QUER como parceiro mas ainda não confirmou."></textarea>
+        <small class="text-warn">⚠ Parceiros desejados não serão tratados como confirmados no projeto.</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3 class="form-section-title">Histórico e Materiais</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Histórico do proponente</label>
+        <textarea name="proponent_history" rows="4" placeholder="Projetos anteriores, prêmios, aprovações em editais, experiências relevantes. Inclua apenas o que pode comprovar."></textarea>
+        <small>Histórico não comprovável será apresentado como 'relatado pelo proponente'.</small>
+      </div>
+      <div class="form-group">
+        <label>Materiais e equipamentos necessários</label>
+        <textarea name="needed_materials" rows="4" placeholder="O que você vai precisar? Equipamentos de som, tendas, materiais para oficina, etc."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3 class="form-section-title">Acessibilidade e Contrapartida</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Acessibilidade desejada</label>
+        <textarea name="desired_accessibility" rows="3" placeholder="Quais ações de acessibilidade você quer incluir? Libras, audiodescrição, rampa de acesso, mediação?"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Contrapartida social desejada</label>
+        <textarea name="desired_counterpart" rows="3" placeholder="Qual ação gratuita e pública você quer oferecer como contrapartida? Para quem? Onde? Quando?"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <a href="/projeto/{{ project.id }}/edital" class="btn btn-outline">← Voltar</a>
+    <button type="submit" class="btn btn-primary">Salvar briefing</button>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+const PROJECT_ID = {{ project.id }};
+
+async function loadBriefing() {
+  try {
+    const res = await fetch(`/api/briefings/${PROJECT_ID}`);
+    if (res.ok) {
+      const data = await res.json();
+      const form = document.getElementById('briefingForm');
+      Object.keys(data).forEach(key => {
+        const el = form.querySelector(`[name="${key}"]`);
+        if (el && data[key]) el.value = data[key];
+      });
+    }
+  } catch (e) {}
+}
+
+document.getElementById('briefingForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const data = {};
+  new FormData(form).forEach((v, k) => { if (v) data[k] = v; });
+
+  try {
+    const res = await fetch(`/api/briefings/${PROJECT_ID}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      showAlert('Briefing salvo com sucesso!', 'success');
+      setTimeout(() => { window.location.href = `/projeto/${PROJECT_ID}/gerar`; }, 1000);
+    } else {
+      const err = await res.json();
+      showAlert('Erro: ' + (err.detail || 'Falha ao salvar'), 'error');
+    }
+  } catch (err) {
+    showAlert('Erro de conexão', 'error');
+  }
+});
+
+loadBriefing();
+</script>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Simulação de Banca — {{ project.internal_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Simulação de Banca</h1>
+    <p class="page-subtitle">{{ project.public_title or project.internal_name }}</p>
+  </div>
+  <a href="/projeto/{{ project.id }}/exportar" class="btn btn-primary">Próximo: Exportar →</a>
+</div>
+
+<div class="alert alert-warn">
+  <strong>⚠ Aviso obrigatório:</strong>
+  Esta é uma simulação técnica de preparação. A aprovação real depende da composição da banca,
+  da concorrência específica do edital e das interpretações da comissão avaliadora.
+  Este parecer NÃO garante aprovação.
+</div>
+
+<div class="score-actions">
+  <button class="btn btn-primary btn-large" id="btnSimulate" {% if not api_configured %}disabled{% endif %}>
+    🎯 Simular Parecer de Banca
+  </button>
+  <div id="simStatus" style="display:none" class="audit-status"></div>
+</div>
+
+<div id="scoreResult" style="display:none">
+  <div class="score-display-card">
+    <div class="score-circle">
+      <span id="totalScore" class="score-big">0</span>
+      <span class="score-max">/100</span>
+    </div>
+    <div class="score-info">
+      <div id="competitiveRange" class="competitive-range">—</div>
+      <div id="rangeDesc" class="range-desc"></div>
+    </div>
+  </div>
+
+  <div class="criteria-table-wrapper">
+    <table class="data-table criteria-table" id="criteriaTable">
+      <thead>
+        <tr>
+          <th>Critério</th><th>Nota</th><th>Máx</th><th>Pontos fortes</th><th>Fragilidades</th><th>Sugestão</th>
+        </tr>
+      </thead>
+      <tbody id="criteriaBody"></tbody>
+    </table>
+  </div>
+
+  <div class="opinion-section">
+    <h3>Parecer de Banca Simulada</h3>
+    <div id="opinionText" class="opinion-text"></div>
+  </div>
+
+  <div class="recommendations-section">
+    <h3>Recomendações</h3>
+    <ul id="recommendationsList" class="recommendations-list"></ul>
+  </div>
+
+  <div class="disclaimer-box">
+    <p id="disclaimerText"></p>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const PROJECT_ID = {{ project.id }};
+
+document.getElementById('btnSimulate').addEventListener('click', async () => {
+  const btn = document.getElementById('btnSimulate');
+  const status = document.getElementById('simStatus');
+  btn.disabled = true;
+  btn.textContent = '⏳ Simulando...';
+  status.style.display = 'block';
+  status.className = 'audit-status generating';
+  status.innerHTML = 'Aguarde... a simulação pode levar 30-60 segundos.';
+
+  try {
+    const res = await fetch(`/api/audit/${PROJECT_ID}/score`, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+      status.className = 'audit-status success';
+      status.innerHTML = '✓ Simulação concluída';
+      renderScore(data);
+    } else {
+      status.className = 'audit-status error';
+      status.innerHTML = `✗ ${data.detail || JSON.stringify(data)}`;
+    }
+  } catch (err) {
+    status.className = 'audit-status error';
+    status.innerHTML = `✗ ${err.message}`;
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🎯 Simular Parecer de Banca';
+});
+
+function renderScore(data) {
+  document.getElementById('scoreResult').style.display = 'block';
+  const total = Math.round(data.total_score || 0);
+  document.getElementById('totalScore').textContent = total;
+
+  const scoreEl = document.getElementById('totalScore');
+  if (total >= 85) scoreEl.className = 'score-big score-excellent';
+  else if (total >= 70) scoreEl.className = 'score-big score-good';
+  else if (total >= 50) scoreEl.className = 'score-big score-medium';
+  else scoreEl.className = 'score-big score-low';
+
+  document.getElementById('competitiveRange').textContent = data.competitive_range || '—';
+
+  const body = document.getElementById('criteriaBody');
+  const criteriaNames = {
+    C1: 'Mérito cultural, artístico e relevância',
+    C2: 'Adequação ao edital e ao objeto',
+    C3: 'Viabilidade técnica e metodológica',
+    C4: 'Orçamento e cronograma',
+    C5: 'Equipe, acessibilidade, impacto e contrapartida',
+  };
+
+  const details = data.criteria_details || [];
+  const scoreKeys = ['c1_score','c2_score','c3_score','c4_score','c5_score'];
+
+  if (details.length) {
+    body.innerHTML = details.map(c => `
+      <tr>
+        <td><strong>${c.code}</strong> — ${c.name}</td>
+        <td class="score-cell ${c.score >= 15 ? 'score-good' : c.score >= 10 ? 'score-ok' : 'score-bad'}">${c.score}</td>
+        <td>${c.max_score}</td>
+        <td><ul>${(c.strengths||[]).map(s => `<li>${s}</li>`).join('')}</ul></td>
+        <td><ul>${(c.weaknesses||[]).map(w => `<li>${w}</li>`).join('')}</ul></td>
+        <td>${c.improvement || '—'}</td>
+      </tr>
+    `).join('');
+  } else {
+    body.innerHTML = Object.entries(criteriaNames).map(([code, name], i) => {
+      const score = data[scoreKeys[i]] || 0;
+      return `<tr>
+        <td><strong>${code}</strong> — ${name}</td>
+        <td class="score-cell">${score}</td>
+        <td>20</td>
+        <td>—</td><td>—</td><td>—</td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('opinionText').textContent = data.opinion_text || '';
+
+  const recs = data.recommendations || [];
+  document.getElementById('recommendationsList').innerHTML = recs.map(r => `<li>${r}</li>`).join('');
+
+  document.getElementById('disclaimerText').textContent = data.disclaimer || '';
+}
+</script>
+{% endblock %}

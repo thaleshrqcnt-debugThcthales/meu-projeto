@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Exportar — {{ project.internal_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Exportar Pacote Final</h1>
+  <p class="page-subtitle">{{ project.public_title or project.internal_name }} · {{ project.proponent_name }}</p>
+</div>
+
+<div class="alert alert-info">
+  <strong>Antes de exportar:</strong> Recomendamos executar a Auditoria de Coerência e a Simulação de Banca para identificar pendências críticas.
+</div>
+
+<div class="export-grid">
+  <div class="export-card">
+    <div class="export-icon">📄</div>
+    <h3>Projeto Completo</h3>
+    <p>DOCX formatado para inscrição, com capa, sumário e tabelas.</p>
+    <a href="/api/export/{{ project.id }}/docx" class="btn btn-primary" target="_blank">↓ Baixar DOCX</a>
+  </div>
+
+  <div class="export-card">
+    <div class="export-icon">📊</div>
+    <h3>Planilha Orçamentária</h3>
+    <p>XLSX com itens, categorias, percentuais e alertas automáticos.</p>
+    <a href="/api/export/{{ project.id }}/xlsx" class="btn btn-primary" target="_blank">↓ Baixar XLSX</a>
+  </div>
+
+  <div class="export-card">
+    <div class="export-icon">📋</div>
+    <h3>Relatório de Auditoria</h3>
+    <p>DOCX com todas as inconsistências e recomendações encontradas.</p>
+    <a href="/api/export/{{ project.id }}/audit-docx" class="btn btn-outline" target="_blank">↓ Baixar Auditoria</a>
+  </div>
+
+  <div class="export-card">
+    <div class="export-icon">⚖</div>
+    <h3>Parecer de Banca</h3>
+    <p>DOCX com notas por critério, parecer e recomendações da simulação.</p>
+    <a href="/api/export/{{ project.id }}/score-docx" class="btn btn-outline" target="_blank">↓ Baixar Parecer</a>
+  </div>
+
+  <div class="export-card">
+    <div class="export-icon">📝</div>
+    <h3>Markdown</h3>
+    <p>Versão em .md do projeto completo, para visualização e edição.</p>
+    <a href="/api/export/{{ project.id }}/md" class="btn btn-outline" target="_blank">↓ Baixar MD</a>
+  </div>
+
+  <div class="export-card highlight">
+    <div class="export-icon">🗜</div>
+    <h3>Pacote Final ZIP</h3>
+    <p>Todos os arquivos em um único ZIP: projeto, orçamento, auditoria, parecer e Markdown.</p>
+    <a href="/api/export/{{ project.id }}/zip" class="btn btn-primary btn-large" target="_blank">↓ Baixar Pacote Completo</a>
+  </div>
+</div>
+
+<div class="pdf-note">
+  <h4>Sobre exportação em PDF</h4>
+  <p>
+    O sistema não exporta PDF diretamente por não depender do LibreOffice em todos os ambientes.
+    Para gerar PDF, abra o arquivo DOCX no Word, LibreOffice ou Google Docs e exporte para PDF por lá.
+    Se você tem LibreOffice instalado, pode usar: <code>libreoffice --headless --convert-to pdf projeto.docx</code>
+  </p>
+</div>
+{% endblock %}

@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}{% if editing %}Editar Projeto{% else %}Novo Projeto{% endif %}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">{% if editing %}Editar Projeto{% else %}Novo Projeto{% endif %}</h1>
+</div>
+
+<form id="projectForm" class="form-card">
+  <div class="form-section">
+    <h3 class="form-section-title">Identificação</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nome interno do projeto *</label>
+        <input type="text" name="internal_name" value="{{ project.internal_name if project }}" required placeholder="Ex: festival-2024">
+        <small>Usado internamente no sistema. Sem espaços ou caracteres especiais.</small>
+      </div>
+      <div class="form-group">
+        <label>Título público do projeto</label>
+        <input type="text" name="public_title" value="{{ project.public_title if project }}" placeholder="Ex: Festival de Artes da Periferia 2024">
+      </div>
+      <div class="form-group">
+        <label>Nome do proponente *</label>
+        <input type="text" name="proponent_name" value="{{ project.proponent_name if project }}" required placeholder="Nome completo ou razão social">
+      </div>
+      <div class="form-group">
+        <label>CPF ou CNPJ</label>
+        <input type="text" name="proponent_cpf_cnpj" value="{{ project.proponent_cpf_cnpj if project }}" placeholder="000.000.000-00 ou 00.000.000/0000-00">
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3 class="form-section-title">Tipo e Localização</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Tipo de proponente</label>
+        <select name="proponent_type">
+          <option value="">Selecione</option>
+          <option value="pessoa_fisica" {% if project and project.proponent_type == 'pessoa_fisica' %}selected{% endif %}>Pessoa Física</option>
+          <option value="MEI" {% if project and project.proponent_type == 'MEI' %}selected{% endif %}>MEI</option>
+          <option value="coletivo" {% if project and project.proponent_type == 'coletivo' %}selected{% endif %}>Coletivo</option>
+          <option value="CNPJ" {% if project and project.proponent_type == 'CNPJ' %}selected{% endif %}>CNPJ (Empresa)</option>
+          <option value="associacao" {% if project and project.proponent_type == 'associacao' %}selected{% endif %}>Associação/Fundação</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Cidade</label>
+        <input type="text" name="city" value="{{ project.city if project }}" placeholder="Nome da cidade">
+      </div>
+      <div class="form-group">
+        <label>Estado (UF)</label>
+        <select name="state">
+          <option value="">Selecione</option>
+          {% for uf in ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'] %}
+          <option value="{{ uf }}" {% if project and project.state == uf %}selected{% endif %}>{{ uf }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3 class="form-section-title">Linguagem e Modalidade</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Linguagem artística principal</label>
+        <select name="cultural_language">
+          <option value="">Selecione</option>
+          {% for lang in ['Música','Teatro','Dança','Artes Visuais','Literatura','Audiovisual','Circo','Cultura Popular','Hip-Hop','Cultura Digital','Patrimônio Cultural','Artesanato','Gastronomia Cultural','Multidisciplinar','Outro'] %}
+          <option value="{{ lang }}" {% if project and project.cultural_language == lang %}selected{% endif %}>{{ lang }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Modalidade</label>
+        <select name="modality">
+          <option value="">Selecione</option>
+          {% for mod in ['Produção','Formação','Circulação','Festival','Mostra','Exposição','Oficina','Ocupação Cultural','Aniversário de Cidade','Audiovisual','Publicação','Pesquisa','Intercâmbio','Outro'] %}
+          <option value="{{ mod }}" {% if project and project.modality == mod %}selected{% endif %}>{{ mod }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Módulo pretendido</label>
+        <input type="text" name="selected_module" value="{{ project.selected_module if project }}" placeholder="Ex: Módulo II — Médio Porte">
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3 class="form-section-title">Valores e Prazo</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Valor pretendido (R$)</label>
+        <input type="number" name="intended_budget" value="{{ project.intended_budget if project }}" step="0.01" placeholder="Ex: 50000.00">
+      </div>
+      <div class="form-group">
+        <label>Duração prevista (meses)</label>
+        <input type="number" name="duration_months" value="{{ project.duration_months if project }}" min="1" max="60" placeholder="Ex: 12">
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3 class="form-section-title">Observações</h3>
+    <div class="form-group full-width">
+      <label>Observações internas</label>
+      <textarea name="observations" rows="4" placeholder="Anotações para uso interno. Não serão incluídas no projeto gerado.">{{ project.observations if project }}</textarea>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <a href="/" class="btn btn-outline">Cancelar</a>
+    <button type="submit" class="btn btn-primary">
+      {% if editing %}Salvar alterações{% else %}Criar projeto{% endif %}
+    </button>
+  </div>
+</form>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const PROJECT_ID = {{ project.id if project else 'null' }};
+const EDITING = {{ 'true' if editing else 'false' }};
+
+document.getElementById('projectForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const data = {};
+  new FormData(form).forEach((v, k) => {
+    if (v) data[k] = k === 'intended_budget' || k === 'duration_months' ? parseFloat(v) || parseInt(v) : v;
+  });
+
+  const url = EDITING ? `/api/projects/${PROJECT_ID}` : '/api/projects/';
+  const method = EDITING ? 'PUT' : 'POST';
+
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (res.ok) {
+      window.location.href = `/projeto/${result.id}`;
+    } else {
+      showAlert('Erro: ' + (result.detail || JSON.stringify(result)), 'error');
+    }
+  } catch (err) {
+    showAlert('Erro de conexão: ' + err.message, 'error');
+  }
+});
+</script>
+{% endblock %}

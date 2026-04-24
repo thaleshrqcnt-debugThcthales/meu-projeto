@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Dashboard</h1>
+  <a href="/projeto/novo" class="btn btn-primary">＋ Novo Projeto</a>
+</div>
+
+{% if not projects_data %}
+<div class="empty-state">
+  <div class="empty-icon">◈</div>
+  <h2>Nenhum projeto ainda</h2>
+  <p>Crie seu primeiro projeto cultural para começar.</p>
+  <a href="/projeto/novo" class="btn btn-primary">Criar projeto</a>
+</div>
+{% else %}
+<div class="projects-grid">
+  {% for item in projects_data %}
+  {% set p = item.project %}
+  <div class="project-card">
+    <div class="card-header">
+      <span class="card-status status-{{ p.status }}">{{ p.status }}</span>
+      <span class="card-date">{{ p.updated_at.strftime('%d/%m/%Y') if p.updated_at else '' }}</span>
+    </div>
+    <h3 class="card-title">{{ p.public_title or p.internal_name }}</h3>
+    <p class="card-meta">{{ p.proponent_name }}</p>
+    <p class="card-meta">{{ p.cultural_language }} · {{ p.modality }}</p>
+    {% if p.intended_budget %}
+    <p class="card-budget">R$ {{ "{:,.2f}".format(p.intended_budget) }}</p>
+    {% endif %}
+
+    <div class="card-scores">
+      {% if item.audit_score is not none %}
+      <div class="score-badge {% if item.audit_score >= 75 %}score-good{% elif item.audit_score >= 50 %}score-ok{% else %}score-bad{% endif %}">
+        Coerência: {{ item.audit_score|int }}/100
+      </div>
+      {% endif %}
+      {% if item.sim_score is not none %}
+      <div class="score-badge {% if item.sim_score >= 75 %}score-good{% elif item.sim_score >= 50 %}score-ok{% else %}score-bad{% endif %}">
+        Banca: {{ item.sim_score|int }}/100
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="card-actions">
+      <a href="/projeto/{{ p.id }}" class="btn btn-sm btn-outline">Abrir</a>
+      <a href="/projeto/{{ p.id }}/gerar" class="btn btn-sm btn-secondary">Gerar</a>
+      <a href="/projeto/{{ p.id }}/exportar" class="btn btn-sm btn-outline">Exportar</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
