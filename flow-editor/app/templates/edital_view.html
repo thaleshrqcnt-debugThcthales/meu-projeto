@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+{% block title %}Edital — {{ project.internal_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Edital do Projeto</h1>
+    <p class="page-subtitle">{{ project.public_title or project.internal_name }}</p>
+  </div>
+  <a href="/projeto/{{ project.id }}/briefing" class="btn btn-primary">Próximo: Briefing →</a>
+</div>
+
+<div class="upload-zone" id="uploadZone">
+  <div class="upload-icon">📄</div>
+  <h3>Enviar PDF do Edital</h3>
+  <p>Arraste o arquivo PDF aqui ou clique para selecionar</p>
+  <input type="file" id="pdfInput" accept=".pdf" style="display:none">
+  <button class="btn btn-outline" onclick="document.getElementById('pdfInput').click()">Selecionar PDF</button>
+</div>
+
+<div id="uploadStatus" class="alert" style="display:none"></div>
+
+<div id="editalResult" style="display:none">
+  <div class="section-header">
+    <h2>Raio-X do Edital</h2>
+    <button class="btn btn-sm btn-outline" onclick="saveEdital()">Salvar correções</button>
+  </div>
+  <div class="info-banner" id="extractionStatus"></div>
+
+  <div class="edict-grid">
+    <div class="edict-card">
+      <label class="edict-label">Nome do Edital</label>
+      <div class="edict-value editable" id="f_nome_edital" contenteditable="true"></div>
+    </div>
+    <div class="edict-card">
+      <label class="edict-label">Órgão Responsável</label>
+      <div class="edict-value editable" id="f_orgao_responsavel" contenteditable="true"></div>
+    </div>
+    <div class="edict-card full-width">
+      <label class="edict-label">Objeto</label>
+      <div class="edict-value editable" id="f_objeto" contenteditable="true"></div>
+    </div>
+    <div class="edict-card">
+      <label class="edict-label">Período de Inscrição</label>
+      <div class="edict-value editable" id="f_periodo_inscricao" contenteditable="true"></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('tab-participantes')">Participantes</button>
+    <button class="tab-btn" onclick="showTab('tab-modulos')">Módulos</button>
+    <button class="tab-btn" onclick="showTab('tab-criterios')">Critérios</button>
+    <button class="tab-btn" onclick="showTab('tab-documentos')">Documentos</button>
+    <button class="tab-btn" onclick="showTab('tab-regras')">Regras</button>
+    <button class="tab-btn" onclick="showTab('tab-riscos')">Riscos Formais</button>
+  </div>
+
+  <div id="tab-participantes" class="tab-content active">
+    <div class="two-col">
+      <div>
+        <h4>Quem pode participar</h4>
+        <ul id="f_quem_pode" class="edict-list"></ul>
+      </div>
+      <div>
+        <h4>Quem não pode participar</h4>
+        <ul id="f_quem_nao_pode" class="edict-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-modulos" class="tab-content">
+    <div id="f_modulos_list"></div>
+  </div>
+
+  <div id="tab-criterios" class="tab-content">
+    <div id="f_criterios_list"></div>
+  </div>
+
+  <div id="tab-documentos" class="tab-content">
+    <div class="two-col">
+      <div>
+        <h4>Documentos obrigatórios</h4>
+        <ul id="f_docs_obrigatorios" class="edict-list"></ul>
+      </div>
+      <div>
+        <h4>Documentos condicionais</h4>
+        <ul id="f_docs_condicionais" class="edict-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-regras" class="tab-content">
+    <div class="three-col">
+      <div>
+        <h4>Orçamento</h4>
+        <ul id="f_regras_orcamento" class="edict-list"></ul>
+      </div>
+      <div>
+        <h4>Acessibilidade</h4>
+        <ul id="f_exig_acessibilidade" class="edict-list"></ul>
+      </div>
+      <div>
+        <h4>Contrapartida</h4>
+        <ul id="f_exig_contrapartida" class="edict-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-riscos" class="tab-content">
+    <ul id="f_riscos_formais" class="edict-list risk-list"></ul>
+  </div>
+
+  <div id="campos-nao-identificados" class="alert alert-warn" style="display:none">
+    <strong>Campos não identificados automaticamente:</strong>
+    <ul id="f_nao_identificados"></ul>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const PROJECT_ID = {{ project.id }};
+let editalId = null;
+let editalData = {};
+
+// Upload
+document.getElementById('pdfInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  await uploadPDF(file);
+});
+
+const uploadZone = document.getElementById('uploadZone');
+uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.pdf')) await uploadPDF(file);
+});
+
+async function uploadPDF(file) {
+  const status = document.getElementById('uploadStatus');
+  status.style.display = 'block';
+  status.className = 'alert alert-info';
+  status.innerHTML = `⏳ Enviando e extraindo edital: <strong>${file.name}</strong>...`;
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch(`/api/edicts/upload/${PROJECT_ID}`, { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (res.ok) {
+      editalId = data.id;
+      editalData = data.extracted_json || {};
+
+      status.className = 'alert alert-success';
+      status.innerHTML = `✓ Edital extraído: <strong>${data.filename}</strong> — ${data.page_count} páginas (${data.extraction_status})`;
+
+      renderEditalData(editalData, data);
+      document.getElementById('editalResult').style.display = 'block';
+    } else {
+      status.className = 'alert alert-error';
+      status.innerHTML = `✗ Erro: ${data.detail || 'Falha no upload'}`;
+    }
+  } catch (err) {
+    status.className = 'alert alert-error';
+    status.innerHTML = `✗ Erro de conexão: ${err.message}`;
+  }
+}
+
+function renderEditalData(data, raw) {
+  setField('f_nome_edital', data.nome_edital);
+  setField('f_orgao_responsavel', data.orgao_responsavel);
+  setField('f_objeto', data.objeto);
+  setField('f_periodo_inscricao', data.periodo_inscricao);
+
+  setList('f_quem_pode', data.quem_pode_participar || []);
+  setList('f_quem_nao_pode', data.quem_nao_pode_participar || []);
+  setList('f_docs_obrigatorios', data.documentos_obrigatorios || []);
+  setList('f_docs_condicionais', data.documentos_condicionais || []);
+  setList('f_regras_orcamento', data.regras_orcamento || []);
+  setList('f_exig_acessibilidade', data.exigencias_acessibilidade || []);
+  setList('f_exig_contrapartida', data.exigencias_contrapartida || []);
+  setList('f_riscos_formais', data.riscos_formais || []);
+
+  // Módulos
+  const modEl = document.getElementById('f_modulos_list');
+  modEl.innerHTML = (data.modulos || []).map(m => `
+    <div class="modulo-card">
+      <strong>${m.nome || 'Módulo'}</strong>
+      <span class="modulo-valor">${m.valor || '—'}</span>
+      <span>${m.quantidade_vagas ? 'Vagas: ' + m.quantidade_vagas : ''}</span>
+      <p>${m.descricao || ''}</p>
+    </div>
+  `).join('') || '<p class="text-muted">Módulos não identificados</p>';
+
+  // Critérios
+  const critEl = document.getElementById('f_criterios_list');
+  critEl.innerHTML = (data.criterios_avaliacao || []).map(c => `
+    <div class="criterio-card">
+      <span class="criterio-code">${c.codigo || ''}</span>
+      <span class="criterio-name">${c.nome || ''}</span>
+      <span class="criterio-score">${c.pontuacao || ''}</span>
+      <p>${c.descricao || ''}</p>
+    </div>
+  `).join('') || '<p class="text-muted">Critérios não identificados</p>';
+
+  // Campos não identificados
+  const naoId = data.campos_nao_identificados || [];
+  if (naoId.length > 0) {
+    document.getElementById('campos-nao-identificados').style.display = 'block';
+    setList('f_nao_identificados', naoId);
+  }
+
+  const banner = document.getElementById('extractionStatus');
+  banner.className = raw.extraction_status === 'ok' ? 'info-banner success' : 'info-banner warn';
+  banner.innerHTML = `Extração: ${raw.extraction_status} | ${raw.page_count} páginas`;
+}
+
+function setField(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value || '';
+}
+
+function setList(id, items) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = items.map(i => `<li>${typeof i === 'object' ? JSON.stringify(i) : i}</li>`).join('') || '<li class="text-muted">Nenhum identificado</li>';
+}
+
+function showTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  event.target.classList.add('active');
+}
+
+async function saveEdital() {
+  if (!editalId) return;
+  // Coleta correções manuais dos campos editáveis
+  const updated = Object.assign({}, editalData);
+  updated.nome_edital = document.getElementById('f_nome_edital').textContent;
+  updated.orgao_responsavel = document.getElementById('f_orgao_responsavel').textContent;
+  updated.objeto = document.getElementById('f_objeto').textContent;
+  updated.periodo_inscricao = document.getElementById('f_periodo_inscricao').textContent;
+
+  try {
+    await fetch(`/api/edicts/${editalId}/extracted`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({extracted_json: updated})
+    });
+    showAlert('Correções salvas!', 'success');
+  } catch (e) {
+    showAlert('Erro ao salvar', 'error');
+  }
+}
+
+// Carrega edital existente se houver
+async function loadExistingEdict() {
+  try {
+    const res = await fetch(`/api/edicts/${PROJECT_ID}/latest`);
+    if (res.ok) {
+      const data = await res.json();
+      editalId = data.id;
+      editalData = data.extracted_json || {};
+      renderEditalData(editalData, data);
+      document.getElementById('editalResult').style.display = 'block';
+      document.getElementById('uploadStatus').style.display = 'block';
+      document.getElementById('uploadStatus').className = 'alert alert-success';
+      document.getElementById('uploadStatus').innerHTML = `✓ Edital carregado: ${data.filename}`;
+    }
+  } catch (e) {}
+}
+
+loadExistingEdict();
+</script>
+{% endblock %}

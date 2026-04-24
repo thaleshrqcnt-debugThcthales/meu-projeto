@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Configurações{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Configurações</h1>
+</div>
+
+<div class="settings-card">
+  <h3>Chave de API da IA</h3>
+  <p class="text-muted">
+    A chave é usada para gerar projetos, auditar com IA e simular a banca.
+    Ela fica salva localmente e é enviada diretamente para a API do provedor (Anthropic).
+  </p>
+  <div class="form-group">
+    <label>ANTHROPIC_API_KEY</label>
+    <div class="input-row">
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-..." value="{{ '***configurada***' if api_configured else '' }}">
+      <button class="btn btn-primary" onclick="saveApiKey()">Salvar</button>
+    </div>
+    <small>
+      Status atual: {% if api_configured %}
+        <span class="text-success">✓ Configurada</span>
+      {% else %}
+        <span class="text-danger">✗ Não configurada</span>
+      {% endif %}
+    </small>
+  </div>
+
+  <div class="form-group" style="margin-top:1rem">
+    <label>Modelo de IA</label>
+    <select id="aiModelInput">
+      <option value="claude-sonnet-4-6" {% if ai_model == 'claude-sonnet-4-6' %}selected{% endif %}>Claude Sonnet 4.6 (recomendado)</option>
+      <option value="claude-opus-4-7" {% if ai_model == 'claude-opus-4-7' %}selected{% endif %}>Claude Opus 4.7 (mais poderoso)</option>
+      <option value="claude-haiku-4-5-20251001" {% if ai_model == 'claude-haiku-4-5-20251001' %}selected{% endif %}>Claude Haiku 4.5 (mais rápido)</option>
+    </select>
+    <button class="btn btn-outline" style="margin-top:0.5rem" onclick="saveModel()">Salvar modelo</button>
+  </div>
+</div>
+
+<div class="settings-card">
+  <h3>Aviso de Privacidade</h3>
+  <ul class="privacy-list">
+    <li>O sistema roda localmente no seu computador.</li>
+    <li>Ao usar funções de IA, trechos do edital e do projeto são enviados para a API da Anthropic.</li>
+    <li>Não enviamos dados para nenhum servidor próprio.</li>
+    <li>Não há telemetria, login obrigatório ou coleta de dados.</li>
+    <li>Seus projetos ficam salvos apenas no banco SQLite local.</li>
+  </ul>
+</div>
+
+<div id="settingsAlert" class="alert" style="display:none"></div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key || key === '***configurada***') return;
+  const res = await fetch('/api/settings/', {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ key: 'anthropic_api_key', value: key })
+  });
+  if (res.ok) {
+    showAlert('Chave de API salva! Recarregue a página para atualizar o status.', 'success');
+    setTimeout(() => window.location.reload(), 1500);
+  }
+}
+
+async function saveModel() {
+  const model = document.getElementById('aiModelInput').value;
+  await fetch('/api/settings/', {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ key: 'ai_model', value: model })
+  });
+  showAlert('Modelo salvo! O modelo será usado nas próximas chamadas de IA.', 'success');
+}
+</script>
+{% endblock %}

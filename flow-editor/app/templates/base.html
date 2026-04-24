@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}FLOW EDITOR{% endblock %} — Sistema Operacional de Projetos Culturais</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">◈</span>
+      <span class="brand-text">FLOW<br><small>EDITOR</small></span>
+    </div>
+    <ul class="sidebar-nav">
+      <li><a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">
+        <span class="nav-icon">⊞</span> Dashboard
+      </a></li>
+      <li><a href="/projeto/novo" class="nav-link">
+        <span class="nav-icon">＋</span> Novo Projeto
+      </a></li>
+      <li class="nav-separator"></li>
+      <li><a href="/configuracoes" class="nav-link {% if '/configuracoes' in request.url.path %}active{% endif %}">
+        <span class="nav-icon">⚙</span> Configurações
+      </a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <div class="api-status {% if api_configured %}status-ok{% else %}status-warn{% endif %}">
+        <span>API: {% if api_configured %}✓ Ativa{% else %}⚠ Sem chave{% endif %}</span>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div class="content-wrapper">
+      {% if not api_configured is undefined and not api_configured %}
+      <div class="alert alert-warn">
+        <strong>⚠ API não configurada.</strong>
+        As funções de IA (geração, auditoria IA, simulação) não estão disponíveis.
+        <a href="/configuracoes">Configurar agora →</a>
+      </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

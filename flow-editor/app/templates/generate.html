@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% block title %}Gerar Projeto — {{ project.internal_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Gerar Projeto Completo</h1>
+    <p class="page-subtitle">{{ project.public_title or project.internal_name }}</p>
+  </div>
+  <a href="/projeto/{{ project.id }}/auditoria" class="btn btn-primary">Próximo: Auditoria →</a>
+</div>
+
+{% if not api_configured %}
+<div class="alert alert-error">
+  <strong>⚠ API não configurada.</strong> Configure sua ANTHROPIC_API_KEY em <a href="/configuracoes">Configurações</a> para usar a geração por IA.
+</div>
+{% endif %}
+
+<div class="generate-actions">
+  <button class="btn btn-primary btn-large" id="btnGenerate" {% if not api_configured %}disabled{% endif %}>
+    ⚡ Gerar Projeto Completo
+  </button>
+  <div id="generateStatus" class="generate-status" style="display:none"></div>
+</div>
+
+<div class="tabs" style="margin-top: 2rem;">
+  <button class="tab-btn active" onclick="showTab('tab-sections')">Seções do Projeto</button>
+  <button class="tab-btn" onclick="showTab('tab-budget')">Orçamento</button>
+  <button class="tab-btn" onclick="showTab('tab-schedule')">Cronograma</button>
+</div>
+
+<div id="tab-sections" class="tab-content active">
+  <div id="sectionsContainer">
+    <p class="text-muted text-center" style="padding: 2rem;">Gere o projeto para ver as seções aqui.</p>
+  </div>
+</div>
+
+<div id="tab-budget" class="tab-content">
+  <div class="budget-header">
+    <h3>Itens do Orçamento</h3>
+    <button class="btn btn-sm btn-outline" onclick="addBudgetRow()">＋ Adicionar item</button>
+    <button class="btn btn-sm btn-primary" onclick="saveBudget()">Salvar orçamento</button>
+  </div>
+  <div class="table-wrapper">
+    <table id="budgetTable" class="data-table">
+      <thead>
+        <tr>
+          <th>Item</th><th>Categoria</th><th>Unid.</th>
+          <th>Qtd</th><th>Valor Unit.</th><th>Total</th><th>Justificativa</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="budgetBody"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="5" class="text-right"><strong>TOTAL:</strong></td>
+          <td id="budgetTotal" class="budget-total"><strong>R$ 0,00</strong></td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<div id="tab-schedule" class="tab-content">
+  <div class="schedule-header">
+    <h3>Cronograma de Execução</h3>
+    <button class="btn btn-sm btn-outline" onclick="addScheduleRow()">＋ Adicionar fase</button>
+    <button class="btn btn-sm btn-primary" onclick="saveSchedule()">Salvar cronograma</button>
+  </div>
+  <div class="table-wrapper">
+    <table id="scheduleTable" class="data-table">
+      <thead>
+        <tr><th>Fase</th><th>Mês</th><th>Atividade</th><th>Responsável</th><th>Comprovação</th><th></th></tr>
+      </thead>
+      <tbody id="scheduleBody"></tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const PROJECT_ID = {{ project.id }};
+const SECTION_LABELS = {
+  TITULO: 'Título', RESUMO: 'Resumo', APRESENTACAO: 'Apresentação',
+  JUSTIFICATIVA: 'Justificativa', DIAGNOSTICO_TERRITORIAL: 'Diagnóstico Territorial',
+  OBJETIVO_GERAL: 'Objetivo Geral', OBJETIVOS_ESPECIFICOS: 'Objetivos Específicos',
+  PUBLICO_ALVO: 'Público-Alvo', METAS: 'Metas', METODOLOGIA: 'Metodologia',
+  ACOES_PREVISTAS: 'Ações Previstas', CRONOGRAMA: 'Cronograma', EQUIPE: 'Equipe',
+  PLANO_ACESSIBILIDADE: 'Plano de Acessibilidade', PLANO_COMUNICACAO: 'Plano de Comunicação',
+  CONTRAPARTIDA: 'Contrapartida', INDICADORES: 'Indicadores', ORCAMENTO_NARRATIVO: 'Orçamento (Narrativa)',
+  RISCOS_MITIGACAO: 'Riscos e Mitigação', RESULTADOS_ESPERADOS: 'Resultados Esperados',
+  LEGADO: 'Legado', CHECKLIST_ANEXOS: 'Checklist de Anexos', ADEQUACAO_EDITAL: 'Adequação ao Edital'
+};
+
+const BUDGET_CATEGORIES = ['recursos_humanos','servicos','materiais','comunicacao','acessibilidade','registro','outros'];
+
+document.getElementById('btnGenerate').addEventListener('click', async () => {
+  const btn = document.getElementById('btnGenerate');
+  const status = document.getElementById('generateStatus');
+  btn.disabled = true;
+  btn.textContent = '⏳ Gerando...';
+  status.style.display = 'block';
+  status.className = 'generate-status generating';
+  status.innerHTML = 'Enviando para IA... Isso pode levar 30 a 90 segundos.';
+
+  try {
+    const res = await fetch(`/api/generate/${PROJECT_ID}/project`, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+      status.className = 'generate-status success';
+      status.innerHTML = `✓ ${data.sections_generated.length} seções geradas. Revise cada uma antes de exportar.`;
+      await loadSections();
+    } else {
+      status.className = 'generate-status error';
+      status.innerHTML = `✗ Erro: ${data.detail || JSON.stringify(data)}`;
+    }
+  } catch (err) {
+    status.className = 'generate-status error';
+    status.innerHTML = `✗ Erro de conexão: ${err.message}`;
+  }
+
+  btn.disabled = false;
+  btn.textContent = '⚡ Gerar Projeto Completo';
+});
+
+async function loadSections() {
+  const res = await fetch(`/api/generate/${PROJECT_ID}/sections`);
+  const sections = await res.json();
+  const container = document.getElementById('sectionsContainer');
+
+  if (!sections.length) {
+    container.innerHTML = '<p class="text-muted text-center" style="padding:2rem">Nenhuma seção gerada ainda.</p>';
+    return;
+  }
+
+  container.innerHTML = sections.map(s => `
+    <div class="section-editor" data-section="${s.section_name}">
+      <div class="section-editor-header">
+        <h3>${SECTION_LABELS[s.section_name] || s.section_name}</h3>
+        <div class="section-actions">
+          <span class="version-badge">v${s.version}</span>
+          <button class="btn btn-sm btn-outline" onclick="humanizeSection('${s.section_name}')">✨ Humanizar</button>
+          <button class="btn btn-sm btn-outline" onclick="regenSection('${s.section_name}')">↻ Regenerar</button>
+          <button class="btn btn-sm btn-primary" onclick="saveSection('${s.section_name}')">Salvar</button>
+        </div>
+      </div>
+      <textarea id="sec_${s.section_name}" class="section-textarea" rows="10">${s.content || ''}</textarea>
+    </div>
+  `).join('');
+}
+
+async function saveSection(name) {
+  const content = document.getElementById(`sec_${name}`).value;
+  await fetch(`/api/generate/${PROJECT_ID}/section`, {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ section_name: name, content })
+  });
+  showAlert('Seção salva!', 'success');
+}
+
+async function regenSection(name) {
+  if (!confirm(`Regenerar a seção "${SECTION_LABELS[name] || name}"? O conteúdo atual será substituído.`)) return;
+  const res = await fetch(`/api/generate/${PROJECT_ID}/section/${name}`, { method: 'POST' });
+  const data = await res.json();
+  if (res.ok) {
+    document.getElementById(`sec_${name}`).value = data.content;
+    showAlert('Seção regenerada!', 'success');
+  }
+}
+
+async function humanizeSection(name) {
+  const text = document.getElementById(`sec_${name}`).value;
+  if (!text) return;
+  showAlert('Humanizando...', 'info');
+  const res = await fetch('/api/generate/humanize', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ text, mode: 'tecnico-cultural', section_context: name })
+  });
+  const data = await res.json();
+  if (res.ok) {
+    document.getElementById(`sec_${name}`).value = data.result;
+    showAlert('Texto humanizado!', 'success');
+  }
+}
+
+// Budget
+function addBudgetRow(item = {}) {
+  const body = document.getElementById('budgetBody');
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td><input type="text" class="table-input b-item" value="${item.item||''}" placeholder="Item"></td>
+    <td><select class="table-input b-cat">
+      ${BUDGET_CATEGORIES.map(c => `<option value="${c}" ${item.category===c?'selected':''}>${c.replace('_',' ')}</option>`).join('')}
+    </select></td>
+    <td><input type="text" class="table-input b-unit" value="${item.unit||'un'}" style="width:60px"></td>
+    <td><input type="number" class="table-input b-qty" value="${item.quantity||1}" step="0.5" oninput="calcRow(this)"></td>
+    <td><input type="number" class="table-input b-uval" value="${item.unit_value||0}" step="0.01" oninput="calcRow(this)"></td>
+    <td class="b-total">R$ ${((item.quantity||1)*(item.unit_value||0)).toFixed(2)}</td>
+    <td><input type="text" class="table-input b-just" value="${item.justification||''}" placeholder="Justificativa"></td>
+    <td><button class="btn-icon" onclick="this.closest('tr').remove(); updateTotal()">✕</button></td>
+  `;
+  body.appendChild(row);
+  updateTotal();
+}
+
+function calcRow(input) {
+  const row = input.closest('tr');
+  const qty = parseFloat(row.querySelector('.b-qty').value) || 0;
+  const uval = parseFloat(row.querySelector('.b-uval').value) || 0;
+  row.querySelector('.b-total').textContent = 'R$ ' + (qty * uval).toFixed(2);
+  updateTotal();
+}
+
+function updateTotal() {
+  const totals = [...document.querySelectorAll('.b-total')].map(el => parseFloat(el.textContent.replace('R$ ','')) || 0);
+  const sum = totals.reduce((a,b) => a+b, 0);
+  document.getElementById('budgetTotal').innerHTML = `<strong>R$ ${sum.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong>`;
+}
+
+async function saveBudget() {
+  const rows = [...document.querySelectorAll('#budgetBody tr')];
+  const items = rows.map(row => ({
+    item: row.querySelector('.b-item').value,
+    category: row.querySelector('.b-cat').value,
+    unit: row.querySelector('.b-unit').value,
+    quantity: parseFloat(row.querySelector('.b-qty').value) || 1,
+    unit_value: parseFloat(row.querySelector('.b-uval').value) || 0,
+    justification: row.querySelector('.b-just').value,
+  }));
+  const res = await fetch(`/api/generate/${PROJECT_ID}/budget`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(items)
+  });
+  if (res.ok) showAlert('Orçamento salvo!', 'success');
+}
+
+// Schedule
+function addScheduleRow(item = {}) {
+  const body = document.getElementById('scheduleBody');
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td><input type="text" class="table-input" value="${item.phase||''}" placeholder="Ex: Pré-produção"></td>
+    <td><input type="text" class="table-input" value="${item.month||''}" placeholder="Mês 1" style="width:70px"></td>
+    <td><input type="text" class="table-input" value="${item.activity||''}" placeholder="Atividade"></td>
+    <td><input type="text" class="table-input" value="${item.responsible||''}" placeholder="Responsável"></td>
+    <td><input type="text" class="table-input" value="${item.evidence||''}" placeholder="Comprovação"></td>
+    <td><button class="btn-icon" onclick="this.closest('tr').remove()">✕</button></td>
+  `;
+  body.appendChild(row);
+}
+
+async function saveSchedule() {
+  const rows = [...document.querySelectorAll('#scheduleBody tr')];
+  const inputs_per_row = 5;
+  const items = rows.map(row => {
+    const inputs = row.querySelectorAll('input');
+    return { phase: inputs[0]?.value, month: inputs[1]?.value, activity: inputs[2]?.value, responsible: inputs[3]?.value, evidence: inputs[4]?.value };
+  });
+  const res = await fetch(`/api/generate/${PROJECT_ID}/schedule`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(items)
+  });
+  if (res.ok) showAlert('Cronograma salvo!', 'success');
+}
+
+function showTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Carrega dados existentes
+async function loadExistingData() {
+  await loadSections();
+
+  // Orçamento
+  try {
+    const res = await fetch(`/api/projects/${PROJECT_ID}/full`);
+    const data = await res.json();
+    (data.budgets || []).forEach(b => addBudgetRow(b));
+    (data.schedules || []).forEach(s => addScheduleRow(s));
+  } catch (e) {}
+}
+
+loadExistingData();
+</script>
+{% endblock %}

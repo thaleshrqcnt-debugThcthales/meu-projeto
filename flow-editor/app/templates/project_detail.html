@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}{{ project.public_title or project.internal_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ project.public_title or project.internal_name }}</h1>
+    <p class="page-subtitle">{{ project.proponent_name }} · {{ project.city }}/{{ project.state }}</p>
+  </div>
+  <div class="header-actions">
+    <a href="/projeto/{{ project.id }}/editar" class="btn btn-outline">✎ Editar</a>
+    <a href="/projeto/{{ project.id }}/exportar" class="btn btn-primary">↓ Exportar</a>
+  </div>
+</div>
+
+<div class="project-steps">
+  <a href="/projeto/{{ project.id }}/edital" class="step-card {% if project.status != 'rascunho' %}step-done{% endif %}">
+    <div class="step-num">1</div>
+    <div class="step-info">
+      <strong>Edital</strong>
+      <span>Upload e raio-x</span>
+    </div>
+    <span class="step-arrow">→</span>
+  </a>
+  <a href="/projeto/{{ project.id }}/briefing" class="step-card">
+    <div class="step-num">2</div>
+    <div class="step-info">
+      <strong>Briefing</strong>
+      <span>Ideia e dados</span>
+    </div>
+    <span class="step-arrow">→</span>
+  </a>
+  <a href="/projeto/{{ project.id }}/gerar" class="step-card {% if project.status == 'gerado' or project.status == 'auditado' %}step-done{% endif %}">
+    <div class="step-num">3</div>
+    <div class="step-info">
+      <strong>Gerar</strong>
+      <span>Projeto completo</span>
+    </div>
+    <span class="step-arrow">→</span>
+  </a>
+  <a href="/projeto/{{ project.id }}/auditoria" class="step-card">
+    <div class="step-num">4</div>
+    <div class="step-info">
+      <strong>Auditoria</strong>
+      <span>Coerência</span>
+    </div>
+    <span class="step-arrow">→</span>
+  </a>
+  <a href="/projeto/{{ project.id }}/banca" class="step-card">
+    <div class="step-num">5</div>
+    <div class="step-info">
+      <strong>Banca</strong>
+      <span>Simulação</span>
+    </div>
+    <span class="step-arrow">→</span>
+  </a>
+  <a href="/projeto/{{ project.id }}/exportar" class="step-card">
+    <div class="step-num">6</div>
+    <div class="step-info">
+      <strong>Exportar</strong>
+      <span>Pacote final</span>
+    </div>
+    <span class="step-arrow">✓</span>
+  </a>
+</div>
+
+<div class="info-cards">
+  <div class="info-card">
+    <span class="info-label">Módulo</span>
+    <span class="info-value">{{ project.selected_module or '—' }}</span>
+  </div>
+  <div class="info-card">
+    <span class="info-label">Valor</span>
+    <span class="info-value">{% if project.intended_budget %}R$ {{ "{:,.2f}".format(project.intended_budget) }}{% else %}—{% endif %}</span>
+  </div>
+  <div class="info-card">
+    <span class="info-label">Duração</span>
+    <span class="info-value">{{ project.duration_months or '—' }} meses</span>
+  </div>
+  <div class="info-card">
+    <span class="info-label">Linguagem</span>
+    <span class="info-value">{{ project.cultural_language or '—' }}</span>
+  </div>
+  <div class="info-card">
+    <span class="info-label">Modalidade</span>
+    <span class="info-value">{{ project.modality or '—' }}</span>
+  </div>
+  <div class="info-card">
+    <span class="info-label">Status</span>
+    <span class="info-value status-badge status-{{ project.status }}">{{ project.status }}</span>
+  </div>
+</div>
+
+<div id="projectSummary" class="project-summary-section">
+  <div class="loading-inline">Carregando resumo do projeto...</div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const PROJECT_ID = {{ project.id }};
+
+async function loadSummary() {
+  try {
+    const res = await fetch(`/api/projects/${PROJECT_ID}/full`);
+    const data = await res.json();
+    renderSummary(data);
+  } catch (e) {
+    document.getElementById('projectSummary').innerHTML = '<p class="text-muted">Erro ao carregar detalhes.</p>';
+  }
+}
+
+function renderSummary(data) {
+  const el = document.getElementById('projectSummary');
+  let html = '';
+
+  if (data.latest_audit) {
+    const a = data.latest_audit;
+    const cls = a.score >= 75 ? 'good' : a.score >= 50 ? 'ok' : 'bad';
+    html += `<div class="summary-row">
+      <span>Última auditoria:</span>
+      <span class="score-badge score-${cls}">${a.status} — ${Math.round(a.score)}/100</span>
+    </div>`;
+  }
+
+  if (data.latest_score) {
+    const s = data.latest_score;
+    const cls = s.total_score >= 75 ? 'good' : s.total_score >= 50 ? 'ok' : 'bad';
+    html += `<div class="summary-row">
+      <span>Simulação de banca:</span>
+      <span class="score-badge score-${cls}">${s.competitive_range} — ${Math.round(s.total_score)}/100</span>
+    </div>`;
+  }
+
+  const sections = data.sections || [];
+  const budgets = data.budgets || [];
+  html += `<div class="summary-row">
+    <span>Seções geradas:</span>
+    <span>${sections.length} de 23</span>
+  </div>`;
+  html += `<div class="summary-row">
+    <span>Itens no orçamento:</span>
+    <span>${budgets.length}</span>
+  </div>`;
+
+  if (budgets.length) {
+    const total = budgets.reduce((s, b) => s + (b.total_value || 0), 0);
+    html += `<div class="summary-row">
+      <span>Total orçado:</span>
+      <span>R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+    </div>`;
+  }
+
+  el.innerHTML = html || '<p class="text-muted">Nenhum dado processado ainda.</p>';
+}
+
+loadSummary();
+</script>
+{% endblock %}
