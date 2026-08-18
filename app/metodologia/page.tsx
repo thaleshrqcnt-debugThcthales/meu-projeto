@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SiteFooter, SiteHeader } from "../site-chrome";
+import { ExploreMore, SiteFooter, SiteHeader } from "../site-chrome";
 
 export const metadata: Metadata = {
   title: "Metodologia reutilizável",
@@ -54,6 +54,11 @@ export default function MethodPage() {
           </ul>
         </section>
       </main>
+      <ExploreMore links={[
+        { href: "/#artefatos", title: "Acervo", desc: "Sete peças de seis povos com fichas acessíveis e documentação transparente." },
+        { href: "/atlas", title: "Atlas dos Povos", desc: "Mapa de referências geográficas das comunidades representadas no acervo." },
+        { href: "/sobre", title: "Sobre", desc: "Equipe, curadoria indígena e princípios do projeto." },
+      ]} />
       <SiteFooter />
     </>
   );

@@ -302,7 +302,7 @@ export const artifacts: Artifact[] = [
     titleName: "Arco e Flecha — referência Kariri-Xocó",
     originalName: "Nome na língua de origem: em verificação com a curadoria indígena",
     type: "Conjunto de arco, flechas e aljava",
-    people: "Referência informada: povo Kariri-Xocó",
+    people: "Povo Kariri-Xocó",
     peopleFilter: "Kariri-Xocó",
     territory: "Porto Real do Colégio · Alagoas · baixo rio São Francisco",
     image: "/media/arco-flecha-kariri-xoco.jpg",

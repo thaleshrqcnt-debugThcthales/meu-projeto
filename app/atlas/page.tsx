@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import AtlasClient from "./atlas-client";
-import { SiteFooter, SiteHeader } from "../site-chrome";
+import { ExploreMore, SiteFooter, SiteHeader } from "../site-chrome";
 
 export const metadata: Metadata = {
   title: "Atlas dos Povos",
@@ -26,6 +26,11 @@ export default function AtlasPage() {
           <p>Para limites territoriais oficiais, consulte a <a href="https://www.gov.br/funai/pt-br/atuacao/terras-indigenas" target="_blank" rel="noreferrer">Funai ↗</a>. A base cartográfica oficial brasileira pode ser consultada nas <a href="https://www.ibge.gov.br/geociencias/organizacao-do-territorio/malhas-territoriais/15774-malhas.html" target="_blank" rel="noreferrer">Malhas Territoriais do IBGE ↗</a>.</p>
         </section>
       </main>
+      <ExploreMore links={[
+        { href: "/#artefatos", title: "Acervo", desc: "Sete peças de seis povos com fichas acessíveis e documentação transparente." },
+        { href: "/metodologia", title: "Metodologia", desc: "Como as fichas são construídas, o que se omite e por quê." },
+        { href: "/sobre", title: "Sobre", desc: "Equipe, curadoria indígena e princípios do projeto." },
+      ]} />
       <SiteFooter />
     </>
   );
