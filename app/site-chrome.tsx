@@ -54,35 +54,41 @@ export function SiteHeader({ returnLabel, returnHref }: HeaderProps) {
 export function SiteFooter() {
   return (
     <footer className="site-footer">
-      <div className="footer-inner">
-        <div className="footer-brand">
-          <Link href="/" aria-label="NHANDEREKO — página inicial">
-            <BrandMark />
-          </Link>
-          <p style={{ marginTop: "14px", color: "var(--muted)", fontSize: ".84rem" }}>Mostra de Artefatos — acervo digital acessível</p>
-        </div>
-        <div className="footer-credits">
-          <p className="footer-summary">
-            <strong>Proponente:</strong> Wemerson Cunto<br />
-            <strong>Produção executiva:</strong> Thales Henrique Cunto e Fabrício de Assis Vicentin<br />
-            <strong>Curadoria indígena:</strong> Juá Jacarandá Kixelô Kariri<br />
-            <strong>Acessibilidade:</strong> Lucas Horas / Minutos com Horas<br />
-            <strong>Libras:</strong> Bárbara Libras
-          </p>
-        </div>
+      <div className="footer-inner footer-compact">
+        <Link href="/" aria-label="NHANDEREKO — página inicial">
+          <BrandMark />
+        </Link>
         <nav className="footer-links" aria-label="Navegação do rodapé">
           <Link href="/#artefatos">Acervo</Link>
           <Link href="/atlas">Atlas dos Povos</Link>
-          <Link href="/metodologia">Metodologia reutilizável</Link>
-          <Link href="/sobre">Sobre a obra</Link>
-          <Link href="/acessibilidade">Recursos de acessibilidade</Link>
+          <Link href="/metodologia">Metodologia</Link>
+          <Link href="/sobre">Sobre</Link>
+          <Link href="/acessibilidade">Acessibilidade</Link>
         </nav>
-        <small className="footer-note" style={{ gridColumn: "1/-1" }}>
-          NHANDEREKO — Ler, Brincar e Pertencer · Chamamento Público nº 02/2026-SMC-PNAB · São José do Rio Preto — SP · 2026.{" "}
-          <Link href="/sobre">Equipe e créditos completos</Link>.
+        <small className="footer-note">
+          Projeto realizado pelo Chamamento Público nº 02/2026-SMC-PNAB · São José do Rio Preto — SP · 2026.{" "}
+          <Link href="/sobre#equipe">Equipe e créditos →</Link>
         </small>
       </div>
     </footer>
+  );
+}
+
+type ExploreLink = { href: string; title: string; desc: string };
+
+export function ExploreMore({ links }: { links: ExploreLink[] }) {
+  return (
+    <section className="explore-more" aria-labelledby="explore-title">
+      <p className="section-kicker" id="explore-title">Continue explorando</p>
+      <div className="explore-grid">
+        {links.map(({ href, title, desc }) => (
+          <Link key={href} className="explore-card" href={href}>
+            <strong>{title}</strong>
+            <span>{desc}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 

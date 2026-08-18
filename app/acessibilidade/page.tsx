@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SiteFooter, SiteHeader } from "../site-chrome";
+import { ExploreMore, SiteFooter, SiteHeader } from "../site-chrome";
 
 export const metadata: Metadata = {
   title: "Acessibilidade",
@@ -74,6 +74,11 @@ export default function AccessibilityPage() {
           </section>
         </div>
       </main>
+      <ExploreMore links={[
+        { href: "/#artefatos", title: "Acervo", desc: "Sete peças de seis povos com fichas acessíveis e documentação transparente." },
+        { href: "/sobre", title: "Sobre", desc: "Equipe, curadoria indígena e princípios do projeto." },
+        { href: "/metodologia", title: "Metodologia", desc: "Como as fichas são construídas, o que se omite e por quê." },
+      ]} />
       <SiteFooter />
     </>
   );

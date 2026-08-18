@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SiteFooter, SiteHeader } from "../site-chrome";
+import { ExploreMore, SiteFooter, SiteHeader } from "../site-chrome";
 
 export const metadata: Metadata = {
   title: "Sobre a obra",
@@ -59,6 +59,11 @@ export default function AboutPage() {
           </section>
         </div>
       </main>
+      <ExploreMore links={[
+        { href: "/#artefatos", title: "Acervo", desc: "Sete peças de seis povos com fichas acessíveis e documentação transparente." },
+        { href: "/atlas", title: "Atlas dos Povos", desc: "Mapa de referências geográficas das comunidades representadas no acervo." },
+        { href: "/acessibilidade", title: "Acessibilidade", desc: "Declaração de acessibilidade, recursos disponíveis e limitações conhecidas." },
+      ]} />
       <SiteFooter />
     </>
   );

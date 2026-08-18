@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { artifacts } from "./artifacts";
 import ArtifactGrid from "./artifact-grid";
-import { BrandMark, SiteFooter } from "./site-chrome";
+import { BrandMark, SiteFooter, SiteHeader } from "./site-chrome";
 
 export const metadata: Metadata = {
   title: { absolute: "NHANDEREKO — Acervo digital acessível" },
@@ -20,15 +19,9 @@ export default function Home() {
   return (
     <>
       <a className="skip-link" href="#artefatos">Ir para os artefatos</a>
+      <SiteHeader />
       <header className="hero compact-hero">
-        <nav className="site-nav" aria-label="Navegação principal">
-          <a href="#artefatos">Acervo</a>
-          <Link href="/atlas">Atlas</Link>
-          <Link href="/metodologia">Metodologia</Link>
-          <Link href="/sobre">Sobre</Link>
-          <Link href="/acessibilidade">Acessibilidade</Link>
-        </nav>
-        <p className="eyebrow">acervonhandereko · Acervo acessível</p>
+        <p className="eyebrow">Acervo acessível · Mostra de Artefatos</p>
         <h1 className="sr-only">NHANDEREKO</h1>
         <BrandMark hero />
         <p className="hero-copy">Sete peças relacionadas a seis povos, com níveis de documentação claramente indicados.</p>

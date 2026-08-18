@@ -34,7 +34,9 @@ export default function ArtifactGrid({ artifacts }: { artifacts: Artifact[] }) {
           ))}
         </div>
         <p className="sr-only" aria-live="polite" aria-atomic="true">
-          {filter === "Todos" ? `Exibindo ${visible.length} peças de todos os povos.` : `Exibindo ${visible.length} peça${visible.length === 1 ? "" : "s"} do povo ${filter}.`}
+          {filter === "Todos"
+            ? `Exibindo ${visible.length} peças de todos os povos.`
+            : `Exibindo ${visible.length} peça${visible.length === 1 ? "" : "s"} do povo ${filter}.`}
         </p>
       </div>
 
@@ -59,12 +61,12 @@ export default function ArtifactGrid({ artifacts }: { artifacts: Artifact[] }) {
                 </picture>
               </div>
               <div className="artifact-content compact-content">
+                <Link className="card-link" href={`/artefatos/${artifact.slug}`}>
+                  <span className="sr-only">Conhecer a peça: {artifact.name}</span>
+                </Link>
                 <h3>{artifact.name}</h3>
                 <p className="artifact-people">{artifact.people}</p>
-                {artifact.badgeTone === "partial" && (
-                  <p className="card-status card-status-partial">{artifact.badge}</p>
-                )}
-                <Link className="primary-link" href={`/artefatos/${artifact.slug}`}>Conhecer a peça</Link>
+                <span className="card-arrow" aria-hidden="true">→</span>
               </div>
             </article>
           );

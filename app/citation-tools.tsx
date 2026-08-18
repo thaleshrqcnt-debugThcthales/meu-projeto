@@ -5,7 +5,7 @@ import { useState } from "react";
 export default function CitationTools({ name, slug }: { name: string; slug: string }) {
   const [style, setStyle] = useState<"ABNT" | "APA">("ABNT");
   const [copied, setCopied] = useState(false);
-  const url = `https://nhandereko-acervo-fiel-thaleshrqcnt-2844s-projects.vercel.app/artefatos/${slug}`;
+  const url = `https://nhandereko-acervo-oficial.netlify.app/artefatos/${slug}`;
   const abnt = `PROJETO NHANDEREKO. ${name}: ficha digital do acervo. Curadoria indígena: Juá Jacarandá Kixelô Kariri. Produção executiva: Thales Henrique Cunto e Fabrício de Assis Vicentin. São José do Rio Preto: SMC-PNAB, 2026. Disponível em: ${url}.`;
   const apa = `Projeto NHANDEREKO. (2026). ${name} [Ficha digital do acervo]. Curadoria indígena: Juá Jacarandá Kixelô Kariri. Produção executiva: T. H. Cunto & F. A. Vicentin. SMC-PNAB. ${url}`;
   const citation = style === "ABNT" ? abnt : apa;
