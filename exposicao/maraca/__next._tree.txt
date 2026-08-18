@@ -1,0 +1,3 @@
+:HL["/meu-projeto/_next/static/chunks/0p7t763zu1.67.css","style"]
+:HL["/media/maraca.jpg","image"]
+0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"exposicao","param":null,"prefetchHints":0,"slots":{"children":{"name":"slug","param":{"type":"d","key":"maraca","siblings":null},"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}}}},"staleTime":300,"buildId":"bDxohxzth0DuTGXGpA42C"}
