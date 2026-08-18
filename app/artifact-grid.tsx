@@ -61,12 +61,16 @@ export default function ArtifactGrid({ artifacts }: { artifacts: Artifact[] }) {
                 </picture>
               </div>
               <div className="artifact-content compact-content">
-                <Link className="card-link" href={`/artefatos/${artifact.slug}`}>
-                  <span className="sr-only">Conhecer a peça: {artifact.name}</span>
-                </Link>
+                <Link className="card-link" href={`/artefatos/${artifact.slug}`} aria-hidden tabIndex={-1} />
                 <h3>{artifact.name}</h3>
                 <p className="artifact-people">{artifact.people}</p>
-                <span className="card-arrow" aria-hidden="true">→</span>
+                <Link
+                  className="primary-link"
+                  href={`/artefatos/${artifact.slug}`}
+                  aria-label={`Conhecer a peça: ${artifact.name}`}
+                >
+                  Conhecer a peça
+                </Link>
               </div>
             </article>
           );

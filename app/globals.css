@@ -300,7 +300,6 @@ main { display:block; }
   .atlas-map-shell { grid-template-columns:1fr; }
   .atlas-legend { grid-column:1; }
   .footer-inner { grid-template-columns:1fr 1fr; }
-  .footer-nav { grid-column:1/-1; grid-template-columns:repeat(2,minmax(0,1fr)); }
   .exhibition-layout { grid-template-columns:1fr; }
   .exhibition-image { min-height:65svh; }
   .exhibition-content { position:static; }
@@ -356,9 +355,8 @@ main { display:block; }
 
 /* Card inteiramente clicável — stretched link */
 .artifact-card { position:relative; }
-.card-link { position:absolute; inset:0; z-index:2; border-radius:inherit; outline-offset:3px; }
-.card-link:focus-visible { outline:3px solid var(--gold); }
-.card-arrow { display:block; margin-top:auto; padding-top:14px; font-size:1.1rem; color:var(--gold); }
+.card-link { position:absolute; inset:0; z-index:2; border-radius:inherit; }
+.compact-content .primary-link { position:relative; z-index:3; }
 
 /* Seção "Continue explorando" */
 .explore-more { max-width:1120px; margin:0 auto; padding:56px 24px 64px; border-top:1px solid var(--border); }
