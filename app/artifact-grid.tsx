@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 import type { Artifact } from "./artifacts";
 import { peopleFilters } from "./artifacts";
 
+const bp = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 export default function ArtifactGrid({ artifacts }: { artifacts: Artifact[] }) {
   const [filter, setFilter] = useState<(typeof peopleFilters)[number]>("Todos");
   const visible = useMemo(
@@ -48,9 +50,9 @@ export default function ArtifactGrid({ artifacts }: { artifacts: Artifact[] }) {
               <div className="artifact-image-wrap compact-image-wrap">
                 <span className="artifact-number" aria-hidden="true">{num}</span>
                 <picture>
-                  <source srcSet={artifact.image.replace(".jpg", ".webp")} type="image/webp" />
+                  <source srcSet={bp + artifact.image.replace(".jpg", ".webp")} type="image/webp" />
                   <img
-                    src={artifact.image}
+                    src={bp + artifact.image}
                     alt={artifact.imageAlt}
                     width={artifact.imageWidth}
                     height={artifact.imageHeight}

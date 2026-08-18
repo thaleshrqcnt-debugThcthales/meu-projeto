@@ -6,6 +6,8 @@ import CitationTools from "../../citation-tools";
 import LibrasButton from "../../libras-button";
 import { SiteFooter, SiteHeader } from "../../site-chrome";
 
+const bp = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 type Props = { params: Promise<{ slug: string }> };
 
 export function generateStaticParams() {
@@ -48,8 +50,8 @@ export default async function ArtifactPage({ params }: Props) {
         <article className="detail-card">
           <div className="detail-image">
             <picture>
-              <source srcSet={artifact.image.replace(".jpg", ".webp")} type="image/webp" />
-              <img src={artifact.image} alt={artifact.imageAlt} width={artifact.imageWidth} height={artifact.imageHeight} loading="eager" fetchPriority="high" decoding="async" />
+              <source srcSet={bp + artifact.image.replace(".jpg", ".webp")} type="image/webp" />
+              <img src={bp + artifact.image} alt={artifact.imageAlt} width={artifact.imageWidth} height={artifact.imageHeight} loading="eager" fetchPriority="high" decoding="async" />
             </picture>
           </div>
           <div className="detail-content">
@@ -64,7 +66,7 @@ export default async function ArtifactPage({ params }: Props) {
               <section className="audio-block detail-audio" aria-labelledby={`audio-${artifact.slug}`}>
                 <span id={`audio-${artifact.slug}`}>{artifact.slug === "zunidor" ? "Ouça a audiodescrição e o som do zunidor" : "Ouça a audiodescrição"}</span>
                 <audio controls preload="metadata" aria-label={artifact.slug === "zunidor" ? `Audiodescrição de ${artifact.name} seguida do registro sonoro do movimento` : `Audiodescrição de ${artifact.name}`}>
-                  <source src={artifact.audio} type="audio/mpeg" />
+                  <source src={bp + artifact.audio} type="audio/mpeg" />
                   Seu navegador não consegue reproduzir este áudio.
                 </audio>
                 <details className="transcript">
@@ -86,7 +88,7 @@ export default async function ArtifactPage({ params }: Props) {
           {artifact.librasVideo ? (
             <div className="libras-video-wrap">
               <video controls preload="metadata" aria-label={`Vídeo em Libras sobre ${artifact.name}`}>
-                <source src={artifact.librasVideo} type="video/mp4" />
+                <source src={bp + artifact.librasVideo} type="video/mp4" />
                 Seu navegador não consegue reproduzir este vídeo. Use a transcrição completa disponível nesta página.
               </video>
               <p className="libras-status">{artifact.librasStatus}</p>
