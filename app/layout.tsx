@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import LibrasWidget from "./libras-widget";
+import { MobileNav } from "./site-chrome";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://acervonhandereko.vercel.app"),
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="pt-BR">
       <body>
         {children}
+        <MobileNav />
         <LibrasWidget />
       </body>
     </html>
