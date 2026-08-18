@@ -5,14 +5,14 @@ import { BrandMark, SiteFooter, SiteHeader } from "./site-chrome";
 
 export const metadata: Metadata = {
   title: { absolute: "NHANDEREKO — Acervo digital acessível" },
-  description: "Sete peças relacionadas a seis povos, com níveis de documentação claramente indicados.",
+  description: "Sete peças relacionadas a seis povos, com audiodescrição, Libras e procedência documentada.",
   openGraph: {
     title: "NHANDEREKO — Acervo digital acessível",
-    description: "Sete peças relacionadas a seis povos, com níveis de documentação claramente indicados.",
+    description: "Sete peças relacionadas a seis povos, com audiodescrição, Libras e procedência documentada.",
     type: "website",
     images: [{ url: "/media/ritxoko.jpg", alt: "Ritxòkò do acervo NHANDEREKO" }],
   },
-  twitter: { card: "summary_large_image", title: "NHANDEREKO — Acervo digital acessível", description: "Sete peças relacionadas a seis povos, com níveis de documentação claramente indicados.", images: ["/media/ritxoko.jpg"] },
+  twitter: { card: "summary_large_image", title: "NHANDEREKO — Acervo digital acessível", description: "Sete peças relacionadas a seis povos, com audiodescrição, Libras e procedência documentada.", images: ["/media/ritxoko.jpg"] },
 };
 
 export default function Home() {
@@ -24,7 +24,7 @@ export default function Home() {
         <p className="eyebrow">Acervo acessível · Mostra de Artefatos</p>
         <h1 className="sr-only">NHANDEREKO</h1>
         <BrandMark hero />
-        <p className="hero-copy">Sete peças relacionadas a seis povos, com níveis de documentação claramente indicados.</p>
+        <p className="hero-copy">Sete peças relacionadas a seis povos.</p>
         <a className="hero-action" href="#artefatos">Explorar as 7 peças <span aria-hidden="true">↓</span></a>
       </header>
 

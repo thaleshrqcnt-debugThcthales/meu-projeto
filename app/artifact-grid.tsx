@@ -67,9 +67,9 @@ export default function ArtifactGrid({ artifacts }: { artifacts: Artifact[] }) {
                 <Link
                   className="primary-link"
                   href={`/artefatos/${artifact.slug}`}
-                  aria-label={`Conhecer a peça: ${artifact.name}`}
+                  aria-label={`Conheça o artefato: ${artifact.name}`}
                 >
-                  Conhecer a peça
+                  Conheça o artefato
                 </Link>
               </div>
             </article>
